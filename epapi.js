@@ -129,6 +129,7 @@ function __prepare() {
     };
     window.$chan = exports.ui.getCurrentChannel;
     window.$guild = exports.ui.getCurrentGuild;
+    window.$me = exports.internal.getId();
 
     // extension methods used in some older plugins, maintained for compatibility
     String.prototype.replaceAll = function (search, replacement) { return this.split(search).join(replacement) };
@@ -142,8 +143,8 @@ exports = {
     // new version data
     version: {
         major: 5,
-        minor: 1,
-        revision: 17,
+        minor: 2,
+        revision: 18,
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -344,6 +345,16 @@ exports = {
         }
     },
 
+    // localStorage stuff
+    localStorage: {
+        get: function (k) {
+            return $api.internal.objectStorage.impl.get(k);
+        },
+        set: function (k, v) {
+            return $api.internal.objectStorage.impl.set(k, v);
+        }
+    },
+
     // utility functions
     util: {
 
@@ -411,6 +422,11 @@ exports = {
             // overwrite that shit
             eval(`${target1}=stub`);
 
+        },
+
+        findFuncExports: function (s, e) {
+            if (e === undefined) e = s;
+            return wc.findFunc(s).filter(x => x.exports[e] !== undefined)[0].exports;
         }
 
     },
@@ -419,12 +435,14 @@ exports = {
     internal: {
         get dispatcher() { return wc.findFunc('Dispatch')[0].exports },
         //get evnt() { wc.findFunc('MESSAGE_CREATE')[1].exports },
-        get messageUI() { return wc.findFunc('receiveMessage')[0].exports },
-        get messageCreation() { return wc.findFunc('createMessage')[1].exports },
-        //get notf() { wc.findFunc('NOTIFICATION_CREATE')[1].exports },
+        get messageUI() { return exports.util.findFuncExports('receiveMessage') },
+        get messageCreation() { return exports.util.findFuncExports('createMessage') },
+        get notification() { return exports.util.findFuncExports('showNotification') },
         //get hguild() { wc.findFunc('leaveGuild')[0].exports },
         //get lguild() { wc.findFunc('markGuildAsRead')[0].exports },
-        get objectStorage() { return wc.findCache('ObjectStorage')[0].exports }
+        get objectStorage() { return wc.findCache('ObjectStorage')[0].exports },
+
+        getId: () => wc.findCache('getId')[0].exports.getId()
     },
 
     // rest stuff
@@ -536,6 +554,7 @@ exports = {
             return p[p.length - 2];
         },
 
+        // creates a fake message in the current channel (like clyde)
         fakeMsg: function (t, f) {
             var msg = exports.internal.messageCreation.createMessage(this.getCurrentChannel(), t);
             msg.author.avatar = 'EndPwn'
@@ -566,7 +585,7 @@ exports = {
             $('.guilds-wrapper').style.display = '';
         },
 
-        hideToolbar: function () {
+        /*hideToolbar: function () {
             $('.topic').style.display = 'none';
             $('.header-toolbar').style.display = 'none';
         },
@@ -574,18 +593,18 @@ exports = {
         showToolbar: function () {
             $('.topic').style.display = '';
             $('.header-toolbar').style.display = '';
-        },
+        },*/
 
         toggleUsers: function () {
             wc.findFunc('toggleSection')[1].exports.TOGGLE_USERS.action()
         },
 
         showDialog: function (x) { // for example, $api.ui.showDialog({title: 'Pwnt!', body: 'It works!'})
-            wc.findFunc('e.onConfirmSecondary')[1].exports.show(x);
+            findFuncExports('e.onConfirmSecondary', 'show').show(x);
         },
 
         showNotice: function (text, button) {
-            wc.findFunc('notice')[8].exports.show("GENERIC", text, button, () => { }, 0);
+            findFuncExports('ActionTypes.NOTICE_SHOW', 'show').show("GENERIC", text, button, () => { }, 0);
         }
 
     }
