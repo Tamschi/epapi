@@ -456,7 +456,7 @@ exports = {
             var promise = fetch(url, options).then(r => {
 
                 // if a bad thing happens then throw
-                if (!r.ok) throw response.statusText;
+                if (!r.ok) throw r.statusText;
 
                 return r;
 
