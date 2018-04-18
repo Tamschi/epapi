@@ -129,7 +129,7 @@ function __prepare() {
     };
     window.$chan = exports.ui.getCurrentChannel;
     window.$guild = exports.ui.getCurrentGuild;
-    window.$me = exports.internal.getId();
+    window.$me = exports.internal.getId;
 
     // extension methods used in some older plugins, maintained for compatibility
     String.prototype.replaceAll = function (search, replacement) { return this.split(search).join(replacement) };
