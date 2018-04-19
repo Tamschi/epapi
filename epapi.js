@@ -17,10 +17,23 @@
 
 */
 
+/* below are internal functions and objects, please don't touch them */
+
 const __tag = 'EPAPI'
 
 var __silent;
 var __brand;
+
+var __config = {
+    data: {},
+    load: () => this.data = exports.settings.get('epapi') ? exports.settings.get('epapi') : exports.settings.set('epapi', {}),
+    get: k => this.data[k],
+    set: (k, v) => {
+        this.data[k] = v;
+        exports.settings.set('epapi', this.data);
+        return v;
+    }
+};
 
 function __print(t) {
     console.log(`%c[${__tag}]%c ${t}`, 'font-weight:bold;color:#0cc', '');
@@ -66,8 +79,8 @@ function __setwordmark(html) {
     catch (e) { }
 }
 
+// stuff asarpwn's i.js and main.js used to handle
 function __prepare() {
-    // reference loader does these things, but for consistency (because procedures vary across bootstraps), we do them again
 
     // mutant hybrid require() for maximum compatibility, always defined now because some bootstraps have bad implementations
     __print('defining require...');
@@ -96,11 +109,18 @@ function __prepare() {
     __print('defining helper functions...');
 
     // kinclude executes a file directly in the context of the page
-    window.kinclude = p => eval(fs.readFileSync(p, 'utf8').toString());
-    // krequire is a dirty reimplementation of require(), only intended for loading plugins
-    window.krequire = p => eval('(()=>{var exports={};' + fs.readFileSync(exports.data + '/plugins/' + p + (p.endsWith('.js') ? '' : '.js'), 'utf8').toString() + ';return exports})()');
+    window.kinclude = function (p) {
+        return eval(fs.readFileSync(p, 'utf8').toString());
+    }
 
-    // shorthand methods that are used internally and in many plugins, maintained for compatibility
+    // krequire is a reimplementation of require(), only intended for loading plugins
+    window.krequire = function (p) {
+        var exports = {};
+        eval(fs.readFileSync($api.data + '/plugins/' + p + (p.endsWith('.js') ? '' : '.js'), 'utf8').toString());
+        return exports;
+    }
+
+    // shorthand methods that are used internally and in many plugins, maintained for compatibility and convenience
     window.$listen = (e, c) => document.addEventListener(e, function () {
         try {
             c.apply(null, arguments);
@@ -131,24 +151,137 @@ function __prepare() {
     window.$guild = exports.ui.getCurrentGuild;
     window.$me = exports.internal.getId;
 
+    // expose EPAPI as $api, which is what most plugins expect it to be known as
+    window.$api = exports;
+
     // extension methods used in some older plugins, maintained for compatibility
     String.prototype.replaceAll = function (search, replacement) { return this.split(search).join(replacement) };
     Array.prototype.contains = function (s) { return this.indexOf(s) != -1 };
 
     // derive the date of creation from a discord snowflake id
     Date.fromSnowflake = (id) => new Date((id / 4194304) + 1420070400000);
+
 }
 
+// set everything up and load plugins
+function __init() {
+    if ($(".guilds-wrapper .guilds") != null ? $(".guilds-wrapper .guilds").children.length > 0 : 0) {
+        try {
+            // actually start initializing...
+            __print('Discord ready, initializing...')
+
+            // number of broken plugins
+            var warning = 0;
+
+            // use the ep-native event to dispatch other events
+            $listen('ep-native', (e) => {
+                switch (e.detail.type) {
+                    case 'MESSAGE_CREATE':
+                        $dispatch(exports.event.onMessage(e));
+                        break;
+                    case 'CHANNEL_SELECT':
+                        $dispatch(exports.event.onChannelChange(e));
+                        break;
+                }
+            });
+
+            // ep-onchannelmessage is like ep-onmessage, except it only fires when the user is currently viewing the channel the message originates from
+            $listen('ep-onmessage', e => {
+                if (e.detail.channel_id == $chan()) {
+                    $dispatch(exports.event.onChannelMessage(e));
+                }
+            });
+
+            // register an event with discord's internal event system
+            __print('registering Discord event handler...');
+            exports.internal.dispatcher.default.register(e => {
+                if (!__crashed) {
+                    try {
+                        $dispatch(exports.event.discordNativeEvent(e));
+                    }
+                    catch (e) {
+                        __crash(e);
+                    }
+                }
+            });
+
+            // add our avatar -- credit to block for finding this method
+            wc.findFunc("clyde")[0].exports.BOT_AVATARS.EndPwn = "https://cdn.discordapp.com/avatars/350987786037493773/ae0a2f95898cfd867c843c1290e2b917.png";
+
+            // load plugins...
+            if (fs.existsSync(exports.data + '/plugins')) {
+                fs.readdirSync(exports.data + '/plugins').forEach(x => {
+                    if (x.endsWith('.js')) {
+                        try {
+                            var plugin = krequire(x);
+                            if (plugin.start !== undefined) {
+                                __print('loading /plugins/' + x);
+                                plugin.start();
+                            } else {
+                                __print('/plugins/' + x + ' does not export start(), ignoring...');
+                            }
+                        }
+                        catch (e) {
+                            __error(e, x + ' failed to initialize properly');
+                            warning++;
+                        }
+                    }
+                });
+            }
+
+            // execute autoruns...
+            if (fs.existsSync(exports.data + '/autorun')) {
+                fs.readdirSync(exports.data + '/autorun').forEach(x => {
+                    if (x.endsWith('.js')) {
+                        try {
+                            __print('executing /autorun/' + x);
+                            kinclude(exports.data + '/autorun/' + x);
+                        }
+                        catch (e) {
+                            __error(e, x + ' failed to execute properly');
+                            warning++;
+                        }
+                    }
+                });
+            }
+
+            // display a message if any plugins failed to load
+            if (warning) {
+                __alert(`${warning} file${warning > 1 ? 's' : ''} failed to load. Check the console for details.`, 'Plugin failure');
+            }
+
+            // print the about message to the console
+            if (!__silent)
+                exports.about();
+
+            // dispatch the ep-ready event, we're all done here
+            $dispatch(exports.event.onReady());
+        }
+        catch (ex) {
+            __crash(ex);
+        }
+    } else {
+        // discord isnt ready, wait a bit and try again
+        __print('Discord not ready, waiting 1 second...');
+        setTimeout(arguments.callee, 1000);
+    }
+}
+
+/* above are internal functions and objects, please don't touch them */
+
 exports = {
+
     // new version data
     version: {
+
         major: 5,
         minor: 2,
-        revision: 18,
+        revision: 20,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
         }
+
     },
 
     // the first ever export added to epapi, originally as a test -- kept in mainline because i havent had the heart to remove it
@@ -159,30 +292,57 @@ exports = {
         console.log(`%cΣ${__brand ? 'ndPwn%c\nEPAPI ' : 'PAPI⁵%c\n'}${this.version}, using ${this.method}\nhttps://github.com/endpwn/`, 'background:linear-gradient(to bottom right,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:48px;font-family:arial', '');
     },
 
-    // entrypoint
+    // config
+    config: {
+
+        setBranding: v => __config.set('brand', v),
+
+        setSilent: v => __config.set('silent', v),
+
+    },
+
     /*
-        arguments:
+
+        entrypoint arguments:
 
             mthd (string):  the name of your bootstrap
+
             silent (bool):  dont show the about message after completing init
+
             brand (bool):   present self as EndPwn instead of EPAPI V
                             also replaces the Discord wordmark in the top left of the client with the EPAPI/EndPwn logo
+        
+        please do not call this method unless you are a bootstrap
+
     */
     go: function (mthd, silent, brand) {
         try {
             __print('starting up...')
-            __silent = silent;
-            __brand = brand;
+
+            // prepare the global namespace
+            __print('preparing the global namespace...');
+            __prepare();
+
+            // determine the root path where plugins and files will be found
+            exports.data = app.getPath('userData').replace(/\\/g, "/") + '/';
+            __print('data path ' + exports.data);
+
+            // load the epapi config
+            __config.load();
+
+            // dont display about()
+            __silent = __config.get('silent');
+            __silent = __silent === undefined ? silent : __silent;
+
+            // brand the client as endpwn
+            __brand = __config.get('brand');
+            __brand = __brand === undefined ? brand : __brand;
 
             // icon by toxoid49b, tweaked by me
             if (__brand) {
                 // dirty hack to avoid a race condition
                 setTimeout(() => __setwordmark('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#0ff" d="M0,0L13,0L13,2L3,2L8,7.5L3,13L13,13L13,15L0,15L0,13L5,7.5L0,2L0,0Z"/></svg>'), 2000);
             }
-
-            // prepare the global namespace
-            __print('preparing the global namespace...');
-            __prepare();
 
             // try to figure out what bootstrap method was used -- helpful in cases where plugins need to know which bootstrap they are using
             if (typeof (mthd) == 'undefined') {
@@ -196,13 +356,12 @@ exports = {
             }
             __print('using method ' + exports.method);
 
-            // determine the root path where plugins and files will be found
-            exports.data = app.getPath('userData').replace(/\\/g, "/") + '/';
-            __print('data path ' + exports.data);
-
             // start trying to init
             __print('starting init loop...');
-            setTimeout(exports.init, 0);
+            setTimeout(__init, 0);
+
+            // undefine the entrypoint to avoid getting double-called
+            exports.go = undefined;
         }
         catch (ex) {
             // something bad happened, undefine $api and display a message
@@ -210,149 +369,67 @@ exports = {
         }
     },
 
-    // set everything up and load plugins
-    init: function () {
-        if ($(".guilds-wrapper .guilds") != null ? $(".guilds-wrapper .guilds").children.length > 0 : 0) {
-            try {
-                // actually start initializing...
-                __print('Discord ready, initializing...')
-
-                // number of broken plugins
-                var warning = 0;
-
-                // use the ep-native event to dispatch other events
-                $listen('ep-native', (e) => {
-                    switch (e.detail.type) {
-                        case 'MESSAGE_CREATE':
-                            $dispatch(exports.event.onMessage(e));
-                            break;
-                        case 'CHANNEL_SELECT':
-                            $dispatch(exports.event.onChannelChange(e));
-                            break;
-                    }
-                });
-
-                // ep-onchannelmessage is like ep-onmessage, except it only fires when the user is currently viewing the channel the message originates from
-                $listen('ep-onmessage', e => {
-                    if (e.detail.channel_id == $chan()) {
-                        $dispatch(exports.event.onChannelMessage(e));
-                    }
-                });
-
-                // register an event with discord's internal event system
-                __print('registering Discord event handler...');
-                exports.internal.dispatcher.default.register(e => {
-                    if (!__crashed) {
-                        try {
-                            $dispatch(exports.event.discordNativeEvent(e));
-                        }
-                        catch (e) {
-                            __crash(e);
-                        }
-                    }
-                });
-
-                // add our avatar -- credit to block for finding this method
-                wc.findFunc("clyde")[0].exports.BOT_AVATARS.EndPwn = "https://cdn.discordapp.com/avatars/350987786037493773/ae0a2f95898cfd867c843c1290e2b917.png";
-
-                // load plugins...
-                if (fs.existsSync(exports.data + '/plugins')) {
-                    fs.readdirSync(exports.data + '/plugins').forEach(x => {
-                        if (x.endsWith('.js')) {
-                            try {
-                                var plugin = krequire(x);
-                                if (plugin.start !== undefined) {
-                                    __print('loading /plugins/' + x);
-                                    plugin.start();
-                                } else {
-                                    __print('/plugins/' + x + ' does not export start(), ignoring...');
-                                }
-                            }
-                            catch (e) {
-                                __error(e, x + ' failed to initialize properly');
-                                warning++;
-                            }
-                        }
-                    });
-                }
-
-                // execute autoruns...
-                if (fs.existsSync(exports.data + '/autorun')) {
-                    fs.readdirSync(exports.data + '/autorun').forEach(x => {
-                        if (x.endsWith('.js')) {
-                            try {
-                                __print('executing /autorun/' + x);
-                                kinclude(exports.data + '/autorun/' + x);
-                            }
-                            catch (e) {
-                                __error(e, x + ' failed to execute properly');
-                                warning++;
-                            }
-                        }
-                    });
-                }
-
-                // display a message if any plugins failed to load
-                if (warning) {
-                    __alert(`${warning} file${warning > 1 ? 's' : ''} failed to load. Check the console for details.`, 'Plugin failure');
-                }
-
-                // print the about message to the console
-                if (!__silent)
-                    exports.about();
-
-                // dispatch the ep-ready event, we're all done here
-                $dispatch(exports.event.onReady());
-            }
-            catch (ex) {
-                __crash(ex);
-            }
-        } else {
-            // discord isnt ready, wait a bit and try again
-            __print('Discord not ready, waiting 1 second...');
-            setTimeout(arguments.callee, 1000);
-        }
-    },
-
+    // events, obviously
     event: {
+
+        // dispatched whenever Discord's internal event system dispatches an event
         discordNativeEvent: function (e) {
             return new CustomEvent('ep-native', { detail: e });
         },
+
+        // dispatched whenever EPAPI is done initializing and loading plugins
         onReady: function () {
             return new Event('ep-ready');
         },
+
+        // dispatched whenever the user changes channel/guild in the ui
         onChannelChange: function (e) {
             return new CustomEvent('ep-onchannelchange', { detail: e.detail });
         },
+
+        // dispatched whenever any message is received by the client
         onMessage: function (e) {
             return new CustomEvent('ep-onmessage', { detail: e.detail });
         },
+
+        // dispatched whenever a message is received in the channel that the user is currently viewing
         onChannelMessage: function (e) {
             return new CustomEvent('ep-onchannelmessage', { detail: e.detail });
         }
+
     },
 
     // methods for committing data to settings.json
     settings: {
+
+        // get a value in the settings.json object
         get: function (k) {
             return JSON.parse(fs.readFileSync(exports.data + '/settings.json', 'utf8'))[k];
         },
+
+        // set a value in the settings.json object
         set: function (k, v) {
             var o = JSON.parse(fs.readFileSync(exports.data + '/settings.json', 'utf8'));
             o[k] = v;
             fs.writeFileSync(exports.data + '/settings.json', JSON.stringify(o, null, 2));
             return v;
         }
+
     },
 
     // localStorage stuff
     localStorage: {
+
+        // get a value from localStorage
         get: function (k) {
-            return $api.internal.objectStorage.impl.get(k);
+            return exports.internal.objectStorage.impl.get(k);
         },
+
+        // set a value in localStorage
         set: function (k, v) {
-            return $api.internal.objectStorage.impl.set(k, v);
+            return exports.internal.objectStorage.impl.set(k, v);
         }
+
     },
 
     // utility functions
@@ -424,6 +501,7 @@ exports = {
 
         },
 
+        // extended findFunc that automatically narrows down results
         findFuncExports: function (s, e) {
             if (e === undefined) e = s;
             return wc.findFunc(s).filter(x => x.exports[e] !== undefined)[0].exports;
@@ -433,6 +511,7 @@ exports = {
 
     // discord internal modules exposed with webcrack, commented out lines' purposes have been forgotten
     internal: {
+
         get dispatcher() { return wc.findFunc('Dispatch')[0].exports },
         //get evnt() { wc.findFunc('MESSAGE_CREATE')[1].exports },
         get messageUI() { return exports.util.findFuncExports('receiveMessage') },
@@ -443,6 +522,7 @@ exports = {
         get objectStorage() { return wc.findCache('ObjectStorage')[0].exports },
 
         getId: () => wc.findCache('getId')[0].exports.getId()
+
     },
 
     // rest stuff
@@ -599,16 +679,19 @@ exports = {
             wc.findFunc('toggleSection')[1].exports.TOGGLE_USERS.action()
         },
 
+        // display a dialog box
         showDialog: function (x) { // for example, $api.ui.showDialog({title: 'Pwnt!', body: 'It works!'})
             findFuncExports('e.onConfirmSecondary', 'show').show(x);
         },
 
+        // display a banner at the top of the app
         showNotice: function (text, button) {
             findFuncExports('ActionTypes.NOTICE_SHOW', 'show').show("GENERIC", text, button, () => { }, 0);
         }
 
-    }
-}
+    },
 
-// expose EPAPI as $api, which is what most plugins expect it to be known as
-window.$api = exports;
+    // debug, dont touch
+    __eval: x => eval(x)
+
+}
