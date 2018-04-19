@@ -148,7 +148,7 @@ function __prepare() {
         return elm;
     };
     window.$chan = exports.ui.getCurrentChannel;
-    window.$guild = exports.discord.getCurrentGuild;
+    window.$guild = exports.ui.getCurrentGuild;
     window.$me = exports.internal.getId;
 
     // expose EPAPI as $api, which is what most plugins expect it to be known as
