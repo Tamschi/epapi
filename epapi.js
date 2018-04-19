@@ -710,12 +710,12 @@ exports = {
 
         // display a dialog box
         showDialog: function (x) { // for example, $api.ui.showDialog({title: 'Pwnt!', body: 'It works!'})
-            findFuncExports('e.onConfirmSecondary', 'show').show(x);
+            exports.util.findFuncExports('e.onConfirmSecondary', 'show').show(x);
         },
 
         // display a banner at the top of the app
         showNotice: function (text, button) {
-            findFuncExports('ActionTypes.NOTICE_SHOW', 'show').show("GENERIC", text, button, () => { }, 0);
+            exports.util.findFuncExports('ActionTypes.NOTICE_SHOW', 'show').show("GENERIC", text, button, () => { }, 0);
         }
 
     },
