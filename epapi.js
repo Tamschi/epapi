@@ -83,8 +83,11 @@ function __setwordmark(html) {
 // stuff asarpwn's i.js and main.js used to handle
 function __prepare() {
 
-    // if we're running in lite (userscript) mode, dont bother with require()
-    if (!__lite) {
+    // undefine config and settings if running in lite mode and dont deal with require()
+    if (__lite) {
+        exports.config = undefined;
+    }
+    else {
 
         // mutant hybrid require() for maximum compatibility, always defined now because some bootstraps have bad implementations
         __print('defining require...');
@@ -106,6 +109,18 @@ function __prepare() {
         window.app = electron.app;
         window.fs = require("original-fs");
 
+        // kinclude executes a file directly in the context of the page
+        window.kinclude = function (p) {
+            return eval(fs.readFileSync(p, 'utf8').toString());
+        }
+
+        // krequire is a reimplementation of require(), only intended for loading plugins
+        window.krequire = function (p) {
+            var exports = {};
+            eval(fs.readFileSync($api.data + '/plugins/' + p + (p.endsWith('.js') ? '' : '.js'), 'utf8').toString());
+            return exports;
+        }
+
     }
 
     // this part sets up webcrack, which is a very important part of EPAPI -- credit to bootsy
@@ -113,18 +128,6 @@ function __prepare() {
     webpackJsonp([1e3], { webcrack_ver01_xyzzy: function (n, b, d) { mArr = d.m, mCac = d.c, mCar = [], Object.keys(mCac).forEach(function (n) { mCar[n] = mCac[n] }), findFunc = function (n) { results = []; if ("string" == typeof n) mArr.forEach(function (r, t) { -1 !== r.toString().indexOf(n) && results.push(mCac[t]) }); else { if ("function" != typeof n) throw new TypeError("findFunc can only find via string and function, " + typeof n + " was passed"); mArr.forEach(function (r, e) { n(r) && results.push(mCac[e]) }) } return results }, findCache = function (n) { if (results = [], "function" == typeof n) mCar.forEach(function (r, t) { n(r) && results.push(r) }); else { if ("string" != typeof n) throw new TypeError("findCache can only find via function or string, " + typeof n + " was passed"); mCar.forEach(function (r, t) { if ("object" == typeof r.exports) for (p in r.exports) if (p == n && results.push(r), "default" == p && "object" == typeof r.exports["default"]) for (p in r.exports["default"]) p == n && results.push(r) }) } return results }, window.wc = { get: d, modArr: mArr, modCache: mCac, modCArr: mCar, findFunc: findFunc, findCache: findCache } } }); webpackJsonp([1e3], "", ["webcrack_ver01_xyzzy"]);
 
     __print('defining helper functions...');
-
-    // kinclude executes a file directly in the context of the page
-    window.kinclude = function (p) {
-        return eval(fs.readFileSync(p, 'utf8').toString());
-    }
-
-    // krequire is a reimplementation of require(), only intended for loading plugins
-    window.krequire = function (p) {
-        var exports = {};
-        eval(fs.readFileSync($api.data + '/plugins/' + p + (p.endsWith('.js') ? '' : '.js'), 'utf8').toString());
-        return exports;
-    }
 
     // shorthand methods that are used internally and in many plugins, maintained for compatibility and convenience
     window.$listen = (e, c) => document.addEventListener(e, function () {
@@ -215,7 +218,10 @@ function __init() {
             wc.findFunc("clyde")[0].exports.BOT_AVATARS.EndPwn = "https://cdn.discordapp.com/avatars/350987786037493773/ae0a2f95898cfd867c843c1290e2b917.png";
 
             // dont try loading plugins in lite mode
-            if (!__lite) {
+            if (__lite) {
+
+            }
+            else {
 
                 // load plugins...
                 if (fs.existsSync(exports.data + '/plugins')) {
@@ -254,11 +260,11 @@ function __init() {
                     });
                 }
 
-                // display a message if any plugins failed to load
-                if (warning) {
-                    __alert(`${warning} file${warning > 1 ? 's' : ''} failed to load. Check the console for details.`, 'Plugin failure');
-                }
+            }
 
+            // display a message if any plugins failed to load
+            if (warning) {
+                __alert(`${warning} file${warning > 1 ? 's' : ''} failed to load. Check the console for details.`, 'Plugin failure');
             }
 
             // print the about message to the console
@@ -287,7 +293,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 22,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 23,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -300,7 +306,12 @@ exports = {
 
     // display info
     about: function () {
-        console.log(`%cΣ${__brand ? 'ndPwn%c\nEPAPI ' : 'PAPI⁵%c\n'}${this.version}, using ${this.method}\nhttps://github.com/endpwn/`, (__lite ? '' : 'background:linear-gradient(to bottom right,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;') + 'font-size:48px;font-family:sans-serif', '');
+        if (__lite) {
+            console.log('%cΣndPwnᴸᴵᵀᴱ', 'font-size:48px;font-family:sans-serif');
+            console.log(`EPAPI ${this.version}\nhttps://github.com/endpwn/`);
+        }
+        else
+            console.log(`%cΣ${__brand ? 'ndPwn%c\nEPAPI ' : 'PAPI⁵%c\n'}${this.version}, using ${this.method}\nhttps://github.com/endpwn/`, 'background:linear-gradient(to bottom right,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:48px;font-family:sans-serif', '');
     },
 
     // config
@@ -313,18 +324,18 @@ exports = {
     },
 
     /*
-
+    
         entrypoint arguments:
-
+    
             mthd (string):  the name of your bootstrap
-
+    
             silent (bool):  dont show the about message after completing init
-
+    
             brand (bool):   present self as EndPwn instead of EPAPI V
                             also replaces the Discord wordmark in the top left of the client with the EPAPI/EndPwn logo
         
         please do not call this method unless you are a bootstrap
-
+    
     */
     go: function (mthd, silent, brand, lite) {
         try {
@@ -424,15 +435,23 @@ exports = {
 
         // get a value in the settings.json object
         get: function (k) {
-            return JSON.parse(fs.readFileSync(exports.data + '/settings.json', 'utf8'))[k];
+            if (__lite)
+                __warn('Something tried retrieving data from settings.json, but we are running in lite mode! Returning undefined...');
+            else
+                return JSON.parse(fs.readFileSync(exports.data + '/settings.json', 'utf8'))[k];
         },
 
         // set a value in the settings.json object
         set: function (k, v) {
-            var o = JSON.parse(fs.readFileSync(exports.data + '/settings.json', 'utf8'));
-            o[k] = v;
-            fs.writeFileSync(exports.data + '/settings.json', JSON.stringify(o, null, 2));
-            return v;
+            if (__lite) {
+                __warn('Something tried putting data into settings.json, but we are running in lite mode! Doing nothing...');
+            }
+            else {
+                var o = JSON.parse(fs.readFileSync(exports.data + '/settings.json', 'utf8'));
+                o[k] = v;
+                fs.writeFileSync(exports.data + '/settings.json', JSON.stringify(o, null, 2));
+                return v;
+            }
         }
 
     },
@@ -698,7 +717,7 @@ exports = {
             $('.topic').style.display = 'none';
             $('.header-toolbar').style.display = 'none';
         },
-
+    
         showToolbar: function () {
             $('.topic').style.display = '';
             $('.header-toolbar').style.display = '';
