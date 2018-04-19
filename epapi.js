@@ -302,7 +302,7 @@ exports = {
                     exports.about();
 
                 // dispatch the ep-ready event, we're all done here
-                setTimeout(() => $dispatch(exports.event.onReady()), 500);
+                $dispatch(exports.event.onReady());
             }
             catch (ex) {
                 __crash(ex);
