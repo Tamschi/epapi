@@ -23,6 +23,7 @@ const __tag = 'EPAPI'
 
 var __silent;
 var __brand;
+var __lite;
 
 var __config = {
     data: {},
@@ -82,25 +83,30 @@ function __setwordmark(html) {
 // stuff asarpwn's i.js and main.js used to handle
 function __prepare() {
 
-    // mutant hybrid require() for maximum compatibility, always defined now because some bootstraps have bad implementations
-    __print('defining require...');
-    //if (typeof (require) == "undefined") {
-    var r = DiscordNative.nativeModules.requireModule("discord_/../electron").remote.require;
-    window.require = m => {
-        try {
-            return DiscordNative.nativeModules.requireModule("discord_/../" + m);
-        }
-        catch (e) {
-            return r(m);
-        }
-    };
-    //}
+    // if we're running in lite (userscript) mode, dont bother with require()
+    if (!__lite) {
 
-    // here we import and define some stuff that usually gets defined by the bootstrap, just in case
-    __print('requiring necessary modules...');
-    window.electron = require('electron').remote;
-    window.app = electron.app;
-    window.fs = require("original-fs");
+        // mutant hybrid require() for maximum compatibility, always defined now because some bootstraps have bad implementations
+        __print('defining require...');
+        //if (typeof (require) == "undefined") {
+        var r = DiscordNative.nativeModules.requireModule("discord_/../electron").remote.require;
+        window.require = m => {
+            try {
+                return DiscordNative.nativeModules.requireModule("discord_/../" + m);
+            }
+            catch (e) {
+                return r(m);
+            }
+        };
+        //}
+
+        // here we import and define some stuff that usually gets defined by the bootstrap, just in case
+        __print('requiring necessary modules...');
+        window.electron = require('electron').remote;
+        window.app = electron.app;
+        window.fs = require("original-fs");
+
+    }
 
     // this part sets up webcrack, which is a very important part of EPAPI -- credit to bootsy
     __print('initializing webcrack...');
@@ -208,46 +214,51 @@ function __init() {
             // add our avatar -- credit to block for finding this method
             wc.findFunc("clyde")[0].exports.BOT_AVATARS.EndPwn = "https://cdn.discordapp.com/avatars/350987786037493773/ae0a2f95898cfd867c843c1290e2b917.png";
 
-            // load plugins...
-            if (fs.existsSync(exports.data + '/plugins')) {
-                fs.readdirSync(exports.data + '/plugins').forEach(x => {
-                    if (x.endsWith('.js')) {
-                        try {
-                            var plugin = krequire(x);
-                            if (plugin.start !== undefined) {
-                                __print('loading /plugins/' + x);
-                                plugin.start();
-                            } else {
-                                __print('/plugins/' + x + ' does not export start(), ignoring...');
+            // dont try loading plugins in lite mode
+            if (!__lite) {
+
+                // load plugins...
+                if (fs.existsSync(exports.data + '/plugins')) {
+                    fs.readdirSync(exports.data + '/plugins').forEach(x => {
+                        if (x.endsWith('.js')) {
+                            try {
+                                var plugin = krequire(x);
+                                if (plugin.start !== undefined) {
+                                    __print('loading /plugins/' + x);
+                                    plugin.start();
+                                } else {
+                                    __print('/plugins/' + x + ' does not export start(), ignoring...');
+                                }
+                            }
+                            catch (e) {
+                                __error(e, x + ' failed to initialize properly');
+                                warning++;
                             }
                         }
-                        catch (e) {
-                            __error(e, x + ' failed to initialize properly');
-                            warning++;
-                        }
-                    }
-                });
-            }
+                    });
+                }
 
-            // execute autoruns...
-            if (fs.existsSync(exports.data + '/autorun')) {
-                fs.readdirSync(exports.data + '/autorun').forEach(x => {
-                    if (x.endsWith('.js')) {
-                        try {
-                            __print('executing /autorun/' + x);
-                            kinclude(exports.data + '/autorun/' + x);
+                // execute autoruns...
+                if (fs.existsSync(exports.data + '/autorun')) {
+                    fs.readdirSync(exports.data + '/autorun').forEach(x => {
+                        if (x.endsWith('.js')) {
+                            try {
+                                __print('executing /autorun/' + x);
+                                kinclude(exports.data + '/autorun/' + x);
+                            }
+                            catch (e) {
+                                __error(e, x + ' failed to execute properly');
+                                warning++;
+                            }
                         }
-                        catch (e) {
-                            __error(e, x + ' failed to execute properly');
-                            warning++;
-                        }
-                    }
-                });
-            }
+                    });
+                }
 
-            // display a message if any plugins failed to load
-            if (warning) {
-                __alert(`${warning} file${warning > 1 ? 's' : ''} failed to load. Check the console for details.`, 'Plugin failure');
+                // display a message if any plugins failed to load
+                if (warning) {
+                    __alert(`${warning} file${warning > 1 ? 's' : ''} failed to load. Check the console for details.`, 'Plugin failure');
+                }
+
             }
 
             // print the about message to the console
@@ -275,8 +286,8 @@ exports = {
     version: {
 
         major: 5,
-        minor: 2,
-        revision: 21,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        minor: 3,
+        revision: 22,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -289,7 +300,7 @@ exports = {
 
     // display info
     about: function () {
-        console.log(`%cΣ${__brand ? 'ndPwn%c\nEPAPI ' : 'PAPI⁵%c\n'}${this.version}, using ${this.method}\nhttps://github.com/endpwn/`, 'background:linear-gradient(to bottom right,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:48px;font-family:arial', '');
+        console.log(`%cΣ${__brand ? 'ndPwn%c\nEPAPI ' : 'PAPI⁵%c\n'}${this.version}, using ${this.method}\nhttps://github.com/endpwn/`, (__lite ? '' : 'background:linear-gradient(to bottom right,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;') + 'font-size:48px;font-family:sans-serif', '');
     },
 
     // config
@@ -315,33 +326,42 @@ exports = {
         please do not call this method unless you are a bootstrap
 
     */
-    go: function (mthd, silent, brand) {
+    go: function (mthd, silent, brand, lite) {
         try {
             __print('starting up...')
+
+            // dont use node integration
+            __lite = lite ? 1 : 0;
 
             // prepare the global namespace
             __print('preparing the global namespace...');
             __prepare();
 
-            // determine the root path where plugins and files will be found
-            exports.data = app.getPath('userData').replace(/\\/g, "/") + '/';
-            __print('data path ' + exports.data);
+            if (!__lite) {
+                // determine the root path where plugins and files will be found
+                exports.data = app.getPath('userData').replace(/\\/g, "/") + '/';
+                __print('data path ' + exports.data);
 
-            // load the epapi config
-            __config.load();
+                // load the epapi config
+                __config.load();
 
-            // dont display about()
-            __silent = __config.get('silent');
-            __silent = __silent === undefined ? silent : __silent;
+                // dont display about()
+                __silent = __config.get('silent');
+                __silent = __silent === undefined ? silent : __silent;
 
-            // brand the client as endpwn
-            __brand = __config.get('brand');
-            __brand = __brand === undefined ? brand : __brand;
+                // brand the client as endpwn
+                __brand = __config.get('brand');
+                __brand = __brand === undefined ? brand : __brand;
 
-            // icon by toxoid49b, tweaked by me
-            if (__brand) {
-                // dirty hack to avoid a race condition
-                setTimeout(() => __setwordmark('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#0ff" d="M0,0L13,0L13,2L3,2L8,7.5L3,13L13,13L13,15L0,15L0,13L5,7.5L0,2L0,0Z"/></svg>'), 2000);
+                // icon by toxoid49b, tweaked by me
+                if (__brand) {
+                    // dirty hack to avoid a race condition
+                    setTimeout(() => __setwordmark('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#0ff" d="M0,0L13,0L13,2L3,2L8,7.5L3,13L13,13L13,15L0,15L0,13L5,7.5L0,2L0,0Z"/></svg>'), 2000);
+                }
+            }
+            else {
+                __silent = silent;
+                __brand = brand;
             }
 
             // try to figure out what bootstrap method was used -- helpful in cases where plugins need to know which bootstrap they are using
