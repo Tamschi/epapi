@@ -293,7 +293,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 23,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 24,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -387,6 +387,9 @@ exports = {
             }
             __print('using method ' + exports.method);
 
+            // dispatch ep-prepared to let the bootstrap know that early init is done
+            $dispatch(exports.event.onPrepared());
+
             // start trying to init
             __print('starting init loop...');
             setTimeout(__init, 0);
@@ -411,6 +414,12 @@ exports = {
         // dispatched whenever EPAPI is done initializing and loading plugins
         onReady: function () {
             return new Event('ep-ready');
+        },
+
+        // dispatched during early init, to signal that at least the global namespace is ready
+        // intended for use by bootstraps
+        onPrepared: function () {
+            return new Event('ep-prepared');
         },
 
         // dispatched whenever the user changes channel/guild in the ui
