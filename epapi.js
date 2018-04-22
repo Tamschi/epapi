@@ -293,7 +293,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 24,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 25,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -348,6 +348,9 @@ exports = {
             __print('preparing the global namespace...');
             __prepare();
 
+            // dispatch ep-prepared to let the bootstrap know that the global namespace is ready
+            $dispatch(exports.event.onPrepared());
+
             if (!__lite) {
                 // determine the root path where plugins and files will be found
                 exports.data = app.getPath('userData').replace(/\\/g, "/") + '/';
@@ -386,9 +389,6 @@ exports = {
                 exports.method = mthd;
             }
             __print('using method ' + exports.method);
-
-            // dispatch ep-prepared to let the bootstrap know that early init is done
-            $dispatch(exports.event.onPrepared());
 
             // start trying to init
             __print('starting init loop...');
