@@ -564,7 +564,7 @@ exports = {
     internal: {
 
         get constants() { return wc.findCache('API_HOST')[0].exports; },
-        get dispatcher() { return wc.findCache('Dispatcher').filter(x => x.exports !== undefined && x.exports.Store === undefined && x.exports.default !== undefined)[0]; },
+        get dispatcher() { return wc.findCache('Dispatcher').filter(x => x.exports !== undefined && x.exports.Store === undefined && x.exports.default !== undefined)[0].exports; },
         //get evnt() { wc.findFunc('MESSAGE_CREATE')[1].exports },
         get messageUI() { return exports.util.findFuncExports('receiveMessage'); },
         get messageCreation() { return exports.util.findFuncExports('createMessage'); },
