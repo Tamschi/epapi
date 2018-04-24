@@ -293,7 +293,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 25,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 26,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -563,16 +563,16 @@ exports = {
     // discord internal modules exposed with webcrack, commented out lines' purposes have been forgotten
     internal: {
 
-        get constants() { return wc.findCache('API_HOST')[0].exports },
-        get dispatcher() { return wc.findFunc('Dispatch')[0].exports },
+        get constants() { return wc.findCache('API_HOST')[0].exports; },
+        get dispatcher() { return wc.findCache('Dispatcher').filter(x => x.exports !== undefined && x.exports.Store === undefined && x.exports.default !== undefined); },
         //get evnt() { wc.findFunc('MESSAGE_CREATE')[1].exports },
-        get messageUI() { return exports.util.findFuncExports('receiveMessage') },
-        get messageCreation() { return exports.util.findFuncExports('createMessage') },
-        get notification() { return exports.util.findFuncExports('showNotification') },
+        get messageUI() { return exports.util.findFuncExports('receiveMessage'); },
+        get messageCreation() { return exports.util.findFuncExports('createMessage'); },
+        get notification() { return exports.util.findFuncExports('showNotification'); },
         //get hguild() { wc.findFunc('leaveGuild')[0].exports },
         //get lguild() { wc.findFunc('markGuildAsRead')[0].exports },
-        get objectStorage() { return wc.findCache('ObjectStorage')[0].exports },
-        get user() { return wc.findCache('getUser')[0].exports },
+        get objectStorage() { return wc.findCache('ObjectStorage')[0].exports; },
+        get user() { return wc.findCache('getUser')[0].exports; },
 
         getId: () => wc.findCache('getId')[0].exports.getId()
 
