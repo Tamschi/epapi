@@ -114,6 +114,12 @@ function __prepare() {
             return eval(fs.readFileSync(p, 'utf8').toString());
         }
 
+        window.kparse = function (p) {
+            var exports = {};
+            eval(p);
+            return exports;
+        }
+
         // krequire is a reimplementation of require(), only intended for loading plugins
         window.krequire = function (p) {
             var exports = {};
@@ -293,7 +299,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 26,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 27,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
