@@ -348,6 +348,7 @@ exports = {
             __print('starting up...')
 
             // dont use node integration
+            // TODO: make exports.lite get-only
             exports.lite = __lite = lite ? true : false;
 
             // prepare the global namespace
