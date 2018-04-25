@@ -299,7 +299,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 28,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 29,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
