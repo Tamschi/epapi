@@ -114,12 +114,6 @@ function __prepare() {
             return eval(fs.readFileSync(p, 'utf8').toString());
         }
 
-        window.kparse = function (p) {
-            var exports = {};
-            eval(p);
-            return exports;
-        }
-
         // krequire is a reimplementation of require(), only intended for loading plugins
         window.krequire = function (p) {
             var exports = {};
@@ -127,6 +121,12 @@ function __prepare() {
             return exports;
         }
 
+    }
+
+    window.kparse = function (p) {
+        var exports = {};
+        eval(p);
+        return exports;
     }
 
     // this part sets up webcrack, which is a very important part of EPAPI -- credit to bootsy
@@ -320,6 +320,11 @@ exports = {
             console.log(`%cΣ${__brand ? 'ndPwn%c\nEPAPI ' : 'PAPI⁵%c\n'}${this.version}, using ${this.method}\nhttps://github.com/endpwn/`, 'background:linear-gradient(to bottom right,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:48px;font-family:sans-serif', '');
     },
 
+    // get the lite status
+    get lite() {
+        return __lite;
+    },
+
     // config
     config: {
 
@@ -348,8 +353,7 @@ exports = {
             __print('starting up...')
 
             // dont use node integration
-            // TODO: make exports.lite get-only
-            exports.lite = __lite = lite ? true : false;
+            __lite = lite ? true : false;
 
             // prepare the global namespace
             __print('preparing the global namespace...');
