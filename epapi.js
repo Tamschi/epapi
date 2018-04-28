@@ -535,7 +535,7 @@ exports = {
 
             stub.original = orig;
             stub.callback = callback;
-            //callback = callback.bind(stub);
+            callback = callback.bind(stub);
 
             // do the overwriting thing
             eval(`${target1}=stub`);
@@ -569,7 +569,7 @@ exports = {
 
             stub.original = orig;
             stub.callback = callback;
-            //callback = callback.bind(stub);
+            callback = callback.bind(stub);
 
             // overwrite that shit
             eval(`${target1}=stub`);
