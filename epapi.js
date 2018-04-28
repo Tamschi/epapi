@@ -42,12 +42,12 @@ function __print(t) {
 
 function __warn(t, e) {
     if (typeof (e) == 'undefined') e = ''; else e = ':\n\n' + e;
-    console.warn(`%c[${__tag}]%c ${t}${e}`, 'font-weight:bold;color:#0cc', '');
+    console.warn(`%c[${__tag}]%c ${t}`, 'font-weight:bold;color:#0cc', '', e);
 }
 
 function __error(e, t) {
     if (typeof (t) == 'undefined') t = 'uncaught exception';
-    console.error(`%c[${__tag}]%c ${t}:\n\n${e}`, 'font-weight:bold;color:#0cc', '');
+    console.error(`%c[${__tag}]%c ${t}:\n\n`, 'font-weight:bold;color:#0cc', '', e);
 }
 
 function __alert(b, t) {
@@ -67,7 +67,7 @@ function __crash(e) {
     if (!__crashed) {
         __crashed = 1;
         if (__brand) {
-            setTimeout(() => __setwordmark('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#f00" d="M0,0L13,0L13,2L3,2L8,7.5L3,13L13,13L13,15L0,15L0,13L5,7.5L0,2L0,0Z"/></svg>'), 2000);
+            __setSigmaColor('#f00');
         }
         __alert('A fatal error occurred in EPAPI.\n\nThis usually means there is a bug in EPAPI or your bootstrap. It can also mean that Discord updated, breaking something important.\n\nCheck the console for details.\n\nIf you don\'t know what this means, contact your bootstrap maintainer.', 'Fatal error!');
     }
@@ -78,6 +78,10 @@ function __setwordmark(html) {
         return document.querySelector('[class*="wordmark"]').innerHTML = html;
     }
     catch (e) { }
+}
+
+function __setSigmaColor(color) {
+    setTimeout(() => __setwordmark(`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="${color}" d="M0,0L13,0L13,2L3,2L8,7.5L3,13L13,13L13,15L0,15L0,13L5,7.5L0,2L0,0Z"/></svg>`), 2000);
 }
 
 // stuff asarpwn's i.js and main.js used to handle
@@ -185,7 +189,7 @@ function __init() {
             if ($api.localStorage.get('safemode')) {
                 __print('running in safe mode, aborting late-init and informing the user');
                 $api.localStorage.set('safemode', undefined);
-                setTimeout(() => __setwordmark('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#ff0" d="M0,0L13,0L13,2L3,2L8,7.5L3,13L13,13L13,15L0,15L0,13L5,7.5L0,2L0,0Z"/></svg>'), 2000);
+                __setSigmaColor('#ff0');
                 __alert('EPAPI is running in safe mode. No plugins have been loaded and internal Discord data structures have been left unmodified.', 'Safe Mode');
                 return;
             }
@@ -307,7 +311,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 30,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 31,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -388,8 +392,7 @@ exports = {
 
                 // icon by toxoid49b, tweaked by me
                 if (__brand) {
-                    // dirty hack to avoid a race condition
-                    setTimeout(() => __setwordmark('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#0ff" d="M0,0L13,0L13,2L3,2L8,7.5L3,13L13,13L13,15L0,15L0,13L5,7.5L0,2L0,0Z"/></svg>'), 2000);
+                    __setSigmaColor('#0ff');
                 }
             }
             else {
@@ -736,11 +739,11 @@ exports = {
         },
 
         hideChannels: function () {
-            $('.channels-3g2vYe').style.display = 'none';
+            $('[class^="channels"]').style.display = 'none';
         },
 
         showChannels: function () {
-            $('.channels-3g2vYe').style.display = '';
+            $('[class^="channels"]').style.display = '';
         },
 
         hideServers: function () {
