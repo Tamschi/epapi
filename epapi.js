@@ -75,7 +75,7 @@ function __crash(e) {
 
 function __setwordmark(html) {
     try {
-        return document.querySelector('.wordmark-2L03Wr').innerHTML = html;
+        return document.querySelector('[class*="wordmark"]').innerHTML = html;
     }
     catch (e) { }
 }
