@@ -182,6 +182,14 @@ function __prepare() {
 function __init() {
     if ($(".guilds-wrapper .guilds") != null ? $(".guilds-wrapper .guilds").children.length > 0 : 0) {
         try {
+            if ($api.localStorage.get('safemode')) {
+                __print('running in safe mode, aborting late-init and informing the user');
+                $api.localStorage.set('safemode', undefined);
+                setTimeout(() => __setwordmark('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="#ff0" d="M0,0L13,0L13,2L3,2L8,7.5L3,13L13,13L13,15L0,15L0,13L5,7.5L0,2L0,0Z"/></svg>'), 2000);
+                __alert('EPAPI is running in safe mode. No plugins have been loaded and internal Discord data structures have been left unmodified.', 'Safe Mode');
+                return;
+            }
+
             // actually start initializing...
             __print('Discord ready, initializing...')
 
@@ -299,7 +307,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 29,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 30,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -525,6 +533,10 @@ exports = {
 
             }
 
+            stub.original = orig;
+            stub.callback = callback;
+            callback = callback.bind(stub);
+
             // do the overwriting thing
             eval(`${target1}=stub`);
 
@@ -555,6 +567,10 @@ exports = {
 
             }
 
+            stub.original = orig;
+            stub.callback = callback;
+            callback = callback.bind(stub);
+
             // overwrite that shit
             eval(`${target1}=stub`);
 
@@ -563,7 +579,9 @@ exports = {
         // extended findFunc that automatically narrows down results
         findFuncExports: function (s, e) {
             if (e === undefined) e = s;
-            var results = wc.findFunc(s).filter(x => x.exports[e] !== undefined);
+            var results = wc.findFunc(s).filter(x => x !== undefined && x.exports !== undefined && x.exports[e] !== undefined);
+            if (results.length == 0)
+                throw 'findFuncExports() found no matches';
             if (results.length > 1)
                 __warn('findFuncExports() found more than one match');
             return results[0].exports;
@@ -579,7 +597,7 @@ exports = {
         //get evnt() { wc.findFunc('MESSAGE_CREATE')[1].exports },
         get messageUI() { return exports.util.findFuncExports('receiveMessage'); },
         get messageCreation() { return exports.util.findFuncExports('createMessage'); },
-        get notification() { return exports.util.findFuncExports('showNotification'); },
+        get notification() { return exports.util.findFuncExports('showNotification', 'setTTSType'); },
         //get hguild() { wc.findFunc('leaveGuild')[0].exports },
         //get lguild() { wc.findFunc('markGuildAsRead')[0].exports },
         get objectStorage() { return wc.findCache('ObjectStorage')[0].exports; },
