@@ -779,7 +779,7 @@ exports = {
         },
 
         // get profile notes for a user
-        getNotes: function (id) {
+        getNote: function (id) {
             return $api.util.findFuncExports('getNote', '_actionHandlers').getNote(id);
         }
 
