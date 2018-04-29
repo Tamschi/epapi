@@ -311,7 +311,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 31,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 32,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -776,6 +776,11 @@ exports = {
         // display a banner at the top of the app
         showNotice: function (text, button) {
             exports.util.findFuncExports('ActionTypes.NOTICE_SHOW', 'show').show("GENERIC", text, button, () => { }, 0);
+        },
+
+        // get profile notes for a user
+        getNotes: function (id) {
+            return $api.util.findFuncExports('getNote', '_actionHandlers').getNote(id);
         }
 
     },
