@@ -325,7 +325,7 @@ exports = {
 
         major: 5,
         minor: 4,
-        revision: 34,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 35,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -734,6 +734,16 @@ exports = {
     // ui stuff, including pulling data from the path for some reason
     ui: {
 
+        // navigate
+        transitionTo: function (path) {
+            wc.findCache('transitionTo')[0].exports.transitionTo(path);
+        },
+
+        // focus discord
+        focus: function () {
+            electron.getCurrentWindow().focus();
+        },
+
         // pull the channel id from the url
         getCurrentChannel: function () {
             var p = window.location.pathname.split('/');
@@ -804,6 +814,12 @@ exports = {
         // get profile notes for a user
         getNote: function (id) {
             return $api.util.findFuncExports('getNote', '_actionHandlers').getNote(id);
+        },
+
+
+
+        get focused() {
+            return electron.getCurrentWindow().isFocused();
         }
 
     },
