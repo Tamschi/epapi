@@ -221,8 +221,12 @@ function __init() {
 
             // register an event with discord's internal event system
             __print('registering Discord event handler...');
+            window.__logAllInternalEvents = false;
             exports.internal.dispatcher.default.register(e => {
                 if (!__crashed) {
+                    if (__logAllInternalEvents) {
+                        console.debug(e.type + '\n', e);
+                    }
                     try {
                         $dispatch(exports.event.discordNativeEvent(e));
                     }
@@ -311,7 +315,7 @@ exports = {
 
         major: 5,
         minor: 3,
-        revision: 32,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 33,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -425,7 +429,7 @@ exports = {
         }
     },
 
-    // events, obviously
+    // legacy events
     event: {
 
         // dispatched whenever Discord's internal event system dispatches an event
@@ -504,6 +508,15 @@ exports = {
 
     // utility functions
     util: {
+
+        // simplifies listening to ep-native
+        nativeListen: function (t, c) {
+            $listen('ep-native', e => {
+                if (e.detail.type == t) {
+                    c(e.detail);
+                }
+            });
+        },
 
         // intercept a function's arguments
         wrap: function (target1, callback) {
