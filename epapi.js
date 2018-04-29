@@ -140,15 +140,25 @@ function __prepare() {
     __print('defining helper functions...');
 
     // shorthand methods that are used internally and in many plugins, maintained for compatibility and convenience
-    window.$listen = (e, c) => document.addEventListener(e, function () {
-        try {
-            c.apply(null, arguments);
-        }
-        catch (e) {
-            __error(e, 'An event listener threw an exception');
-        }
+    window.$listen = (e, c) => {
+        var listener = {
+            name: e,
+            callback: function () {
+                try {
+                    c.apply(null, arguments);
+                }
+                catch (e) {
+                    __error(e, 'An event listener threw an exception');
+                }
 
-    });
+            },
+            unregister: function () {
+                document.removeEventListener(this.name, this.callback);
+            }
+        }
+        document.addEventListener(listener.name, listener.callback);
+        return listener;
+    };
     window.$dispatch = e => document.dispatchEvent(e);
     window.$ = s => document.querySelector(s);
     window.$$ = s => document.querySelectorAll(s);
@@ -314,8 +324,8 @@ exports = {
     version: {
 
         major: 5,
-        minor: 3,
-        revision: 33,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        minor: 4,
+        revision: 34,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -511,7 +521,7 @@ exports = {
 
         // simplifies listening to ep-native
         nativeListen: function (t, c) {
-            $listen('ep-native', e => {
+            return $listen('ep-native', e => {
                 if (e.detail.type == t) {
                     c(e.detail);
                 }
