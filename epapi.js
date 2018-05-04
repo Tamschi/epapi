@@ -661,7 +661,7 @@ exports = {
             // fetch
             var r = await fetch(url, options);
             if (!r.ok)
-                throw Error((await r.json()).message);
+                throw Error(await r.text());
 
             // urgh, theyre using callbacks
             if (c !== undefined) {
