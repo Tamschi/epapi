@@ -325,7 +325,7 @@ exports = {
 
         major: 5,
         minor: 4,
-        revision: 35,   // TODO:    find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 36,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -607,7 +607,7 @@ exports = {
             if (e === undefined) e = s;
             var results = wc.findFunc(s).filter(x => x !== undefined && x.exports !== undefined && x.exports[e] !== undefined);
             if (results.length == 0)
-                throw 'findFuncExports() found no matches';
+                throw Error('findFuncExports() found no matches');
             if (results.length > 1)
                 __warn('findFuncExports() found more than one match');
             return results[0].exports;
@@ -637,7 +637,7 @@ exports = {
     discord: {
 
         // take a wild guess
-        rest: function (method, endpoint, body, c) {
+        rest: async function (method, endpoint, body, c) {
 
             // the url we will be making our request to
             var url = "https://discordapp.com/api/v6" + endpoint;
@@ -658,15 +658,10 @@ exports = {
             // probably not the best way to handle this
             if (method !== 'GET') options.body = body;
 
-            // get the promise
-            var promise = fetch(url, options).then(r => {
-
-                // if a bad thing happens then throw
-                if (!r.ok) throw r;
-
-                return r;
-
-            }).catch(r => r.json().then(x => { throw x }));
+            // fetch
+            var r = await fetch(url, options);
+            if (!r.ok)
+                throw Error((await r.json()).message);
 
             // urgh, theyre using callbacks
             if (c !== undefined) {
@@ -675,10 +670,10 @@ exports = {
                 __warn("Using callbacks in REST calls is deprecated and may be removed in a future release.");
 
                 // operate like EPAPI =<5.0
-                promise.then(r => r.text()).then(c);
+                c(await r.text());
             }
             else {
-                return promise.then(r => r.json());
+                return await r.json();
             }
 
         },
