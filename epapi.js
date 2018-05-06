@@ -198,7 +198,7 @@ function __init() {
         try {
             if ($api.localStorage.get('safemode')) {
                 __print('running in safe mode, aborting late-init and informing the user');
-                $api.localStorage.set('safemode', undefined);
+                $api.localStorage.remove('safemode');
                 __setSigmaColor('#ff0');
                 __alert('EPAPI is running in safe mode. No plugins have been loaded and internal Discord data structures have been left unmodified.', 'Safe Mode');
                 return;
@@ -512,6 +512,11 @@ exports = {
         // set a value in localStorage
         set: function (k, v) {
             return exports.internal.objectStorage.impl.set(k, v);
+        },
+
+        // remove a value from localStorage
+        remove: function (k) {
+            return exports.internal.objectStorage.impl.remove(k);
         }
 
     },
