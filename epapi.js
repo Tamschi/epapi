@@ -18,6 +18,7 @@
 */
 
 /* below are internal functions and objects, please don't touch them */
+// TODO: move all this shit into an object
 
 const __tag = 'EPAPI'
 
@@ -83,6 +84,42 @@ function __setwordmark(html) {
 function __setSigmaColor(color) {
     setTimeout(() => __setwordmark(`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="${color}" d="M0,0L13,0L13,2L3,2L8,7.5L3,13L13,13L13,15L0,15L0,13L5,7.5L0,2L0,0Z"/></svg>`), 2000);
 }
+
+// document-level events (internal)
+var __events = {
+
+    // dispatched whenever Discord's internal event system dispatches an event
+    discordNativeEvent: function (e) {
+        return new CustomEvent('ep-native', { detail: e });
+    },
+
+    // dispatched whenever EPAPI is done initializing and loading plugins
+    onReady: function () {
+        return new Event('ep-ready');
+    },
+
+    // dispatched during early init, to signal that at least the global namespace is ready
+    // intended for use by bootstraps
+    onPrepared: function () {
+        return new Event('ep-prepared');
+    },
+
+    // dispatched whenever the user changes channel/guild in the ui
+    onChannelChange: function (e) {
+        return new CustomEvent('ep-onchannelchange', { detail: e.detail });
+    },
+
+    // dispatched whenever any message is received by the client
+    onMessage: function (e) {
+        return new CustomEvent('ep-onmessage', { detail: e.detail });
+    },
+
+    // dispatched whenever a message is received in the channel that the user is currently viewing
+    onChannelMessage: function (e) {
+        return new CustomEvent('ep-onchannelmessage', { detail: e.detail });
+    }
+
+};
 
 // stuff asarpwn's i.js and main.js used to handle
 function __prepare() {
@@ -214,10 +251,10 @@ function __init() {
             $listen('ep-native', (e) => {
                 switch (e.detail.type) {
                     case 'MESSAGE_CREATE':
-                        $dispatch(exports.event.onMessage(e));
+                        $dispatch(__events.onMessage(e));
                         break;
                     case 'CHANNEL_SELECT':
-                        $dispatch(exports.event.onChannelChange(e));
+                        $dispatch(__events.onChannelChange(e));
                         break;
                 }
             });
@@ -225,7 +262,7 @@ function __init() {
             // ep-onchannelmessage is like ep-onmessage, except it only fires when the user is currently viewing the channel the message originates from
             $listen('ep-onmessage', e => {
                 if (e.detail.channel_id == $chan()) {
-                    $dispatch(exports.event.onChannelMessage(e));
+                    $dispatch(__events.onChannelMessage(e));
                 }
             });
 
@@ -238,13 +275,21 @@ function __init() {
                         console.debug(e.type + '\n', e);
                     }
                     try {
-                        $dispatch(exports.event.discordNativeEvent(e));
+                        $dispatch(__events.discordNativeEvent(e));
                     }
                     catch (e) {
                         __crash(e);
                     }
                 }
             });
+
+            // hook the discord internal event system
+            // TODO: registering with the event system is no longer necessary, we should probably unify this with the above chunk of code
+            $api.internal.dispatcher.default.dispatch_original = $api.internal.dispatcher.default.dispatch;
+            $api.internal.dispatcher.default.dispatch = function (e) {
+                __hooks.filter(x => x.type == e.type).forEach(x => x.callback(e));
+                $api.internal.dispatcher.default.dispatch_original(e);
+            }
 
             // add our avatar -- credit to block for finding this method
             wc.findFunc("clyde")[0].exports.BOT_AVATARS.EndPwn = "https://cdn.discordapp.com/avatars/350987786037493773/ae0a2f95898cfd867c843c1290e2b917.png";
@@ -304,7 +349,7 @@ function __init() {
                 exports.about();
 
             // dispatch the ep-ready event, we're all done here
-            $dispatch(exports.event.onReady());
+            $dispatch(__events.onReady());
         }
         catch (ex) {
             __crash(ex);
@@ -316,6 +361,8 @@ function __init() {
     }
 }
 
+var __hooks = [];
+
 /* above are internal functions and objects, please don't touch them */
 
 exports = {
@@ -324,8 +371,8 @@ exports = {
     version: {
 
         major: 5,
-        minor: 4,
-        revision: 36,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        minor: 5,
+        revision: 37,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -337,6 +384,7 @@ exports = {
     xyzzy: 'Nothing happened.',
 
     // display info
+    // ugly code, should probably be made prettier at some point
     about: function () {
         if (__lite) {
             console.log('%cΣndPwnᴸᴵᵀᴱ', 'font-size:48px;font-family:sans-serif');
@@ -368,7 +416,7 @@ exports = {
     
             silent (bool):  dont show the about message after completing init
     
-            brand (bool):   present self as EndPwn instead of EPAPI V
+            brand (bool):   present self as EndPwn instead of EPAPI5
                             also replaces the Discord wordmark in the top left of the client with the EPAPI/EndPwn logo
         
         please do not call this method unless you are a bootstrap
@@ -386,7 +434,7 @@ exports = {
             __prepare();
 
             // dispatch ep-prepared to let the bootstrap know that the global namespace is ready
-            $dispatch(exports.event.onPrepared());
+            $dispatch(__events.onPrepared());
 
             if (!__lite) {
                 // determine the root path where plugins and files will be found
@@ -439,42 +487,6 @@ exports = {
         }
     },
 
-    // legacy events
-    event: {
-
-        // dispatched whenever Discord's internal event system dispatches an event
-        discordNativeEvent: function (e) {
-            return new CustomEvent('ep-native', { detail: e });
-        },
-
-        // dispatched whenever EPAPI is done initializing and loading plugins
-        onReady: function () {
-            return new Event('ep-ready');
-        },
-
-        // dispatched during early init, to signal that at least the global namespace is ready
-        // intended for use by bootstraps
-        onPrepared: function () {
-            return new Event('ep-prepared');
-        },
-
-        // dispatched whenever the user changes channel/guild in the ui
-        onChannelChange: function (e) {
-            return new CustomEvent('ep-onchannelchange', { detail: e.detail });
-        },
-
-        // dispatched whenever any message is received by the client
-        onMessage: function (e) {
-            return new CustomEvent('ep-onmessage', { detail: e.detail });
-        },
-
-        // dispatched whenever a message is received in the channel that the user is currently viewing
-        onChannelMessage: function (e) {
-            return new CustomEvent('ep-onchannelmessage', { detail: e.detail });
-        }
-
-    },
-
     // methods for committing data to settings.json
     settings: {
 
@@ -524,14 +536,12 @@ exports = {
     // utility functions
     util: {
 
-        // simplifies listening to ep-native
-        nativeListen: function (t, c) {
-            return $listen('ep-native', e => {
-                if (e.detail.type == t) {
-                    c(e.detail);
-                }
-            });
-        },
+        // BUG: wrap and its sister function both fuck things up that use `this`
+        //      i know exactly why this happens, but not the slightest clue how to fix it
+        //      manual wrapping is necessary in some cases because of this
+        //
+        //      trying to use these on any function that uses `this` will fuck that function
+        //      dont do it
 
         // intercept a function's arguments
         wrap: function (target1, callback) {
@@ -635,6 +645,51 @@ exports = {
         get user() { return wc.findCache('getUser')[0].exports; },
 
         getId: () => wc.findCache('getId')[0].exports.getId()
+
+    },
+
+    // discord internal events stuff
+    // $api.event.* is has no use outside of epapi internal things
+    // as such, it has been moved to an internal object
+    events: {
+
+        // $listen('ep-native') without all the fuss
+        listen: function (type, callback) {
+            if (type === undefined) throw Error('must provide an event type');
+            if (callback === undefined) throw Error('must provide a callback');
+
+            return $listen('ep-native', e => {
+                if (e.detail.type == type) {
+                    callback(e.detail);
+                }
+            });
+        },
+
+        // forge an event and dispatch it
+        dispatch: function (event) {
+            if (event.type === undefined) throw Error('must provide an event type');
+
+            return $api.internal.dispatcher.default.dirtyDispatch(event);
+        },
+
+        // intercept and modify an event before it can go anywhere
+        hook: function (type, callback) {
+            if (type === undefined) throw Error('must provide an event type');
+            if (callback === undefined) throw Error('must provide a callback');
+
+            var newHook = {
+                type: type,
+                callback: callback,
+                unregister: () => {
+                    var i = __hooks.indexOf(newHook);
+                    if (i > -1)
+                        __hooks.splice(i, 1);
+                }
+            };
+
+            __hooks.push(newHook);
+            return newHook;
+        }
 
     },
 
