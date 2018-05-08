@@ -273,7 +273,7 @@ function __init() {
             exports.internal.dispatcher.default.register(e => {
                 if (!__crashed) {
                     if (window.__logAllInternalEvents) {
-                        console.debug(e.type + '\n', e);
+                        console.log(e.type + '\n', e);
                     }
                     try {
                         $dispatch(__events.discordNativeEvent(e));
