@@ -240,6 +240,7 @@ function __init() {
                 __alert('EPAPI is running in safe mode. No plugins have been loaded and internal Discord data structures have been left unmodified.', 'Safe Mode');
                 return;
             }
+            $api.localStorage.remove('safemode');
 
             // actually start initializing...
             __print('Discord ready, initializing...')
@@ -271,7 +272,7 @@ function __init() {
             window.__logAllInternalEvents = false;
             exports.internal.dispatcher.default.register(e => {
                 if (!__crashed) {
-                    if (__logAllInternalEvents) {
+                    if (window.__logAllInternalEvents) {
                         console.debug(e.type + '\n', e);
                     }
                     try {
