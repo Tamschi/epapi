@@ -447,7 +447,7 @@ https://discord.gg/8k3gEeE`,
                     break;
 
             }
-            __print('using method ' + exports.method);
+            __print('detected calling convention');
 
             // prepare the global namespace
             __print('preparing the global namespace...');
