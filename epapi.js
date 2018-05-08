@@ -26,17 +26,6 @@ var __silent;
 var __brand;
 var __lite;
 
-var __config = {
-    data: {},
-    load: () => this.data = exports.settings.get('epapi') ? exports.settings.get('epapi') : exports.settings.set('epapi', {}),
-    get: k => this.data[k],
-    set: (k, v) => {
-        this.data[k] = v;
-        exports.settings.set('epapi', this.data);
-        return v;
-    }
-};
-
 function __print(t) {
     console.log(`%c[${__tag}]%c ${t}`, 'font-weight:bold;color:#0cc', '');
 }
@@ -373,7 +362,7 @@ exports = {
 
         major: 5,
         minor: 5,
-        revision: 37,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 38,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -386,13 +375,18 @@ exports = {
 
     // display info
     // ugly code, should probably be made prettier at some point
+    // oh no i made it even uglier
     about: function () {
         if (__lite) {
             console.log('%cΣndPwnᴸᴵᵀᴱ', 'font-size:48px;font-family:sans-serif');
-            console.log(`EPAPI ${this.version}\nhttps://github.com/endpwn/`);
+            console.log(`EPAPI ${this.version}\nhttps://endpwn.github.io/\nhttps://discord.gg/8k3gEeE`);
         }
         else
-            console.log(`%cΣ${__brand ? 'ndPwn%c\nEPAPI ' : 'PAPI⁵%c\n'}${this.version}, ${window.crispr ? `CRISPR ${window.crispr.version}, ` : ''}using ${this.method}\nhttps://github.com/endpwn/\nhttps://discord.gg/8k3gEeE`, 'background:linear-gradient(to bottom right,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:48px;font-family:sans-serif', '');
+            console.log(`%cΣndPwn%c
+EPAPI ${this.version}, ${window.crispr ? `CRISPR ${window.crispr.version}, ` : ''}using ${this.bootstrap.name ? this.bootstrap.name : 'unknown'}${this.bootstrap.version ? ` ${this.bootstrap.version}` : ''}${this.bootstrap.method ? ` (${this.bootstrap.method})` : ''}
+https://endpwn.github.io/
+https://discord.gg/8k3gEeE`, 
+            'background:linear-gradient(to bottom right,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:48px;font-family:sans-serif', '');
     },
 
     // get the lite status
@@ -400,35 +394,60 @@ exports = {
         return __lite;
     },
 
-    // config
-    config: {
-
-        setBranding: v => __config.set('brand', v),
-
-        setSilent: v => __config.set('silent', v),
-
-    },
-
     /*
     
         entrypoint arguments:
     
-            mthd (string):  the name of your bootstrap
-    
-            silent (bool):  dont show the about message after completing init
-    
-            brand (bool):   present self as EndPwn instead of EPAPI5
-                            also replaces the Discord wordmark in the top left of the client with the EPAPI/EndPwn logo
+            bootstrap (object): bootstrap properties
+                                keys:
+                                    name (string):                  name of bootstrap
+                                    version (string or object):     version of bootstrap
+                                    method (string):                name of stage 1 method in use
+                                    lite (bool):                    disables node dependence (for web browsers)
+                                    silent (bool):                  dont display about() after initialization
+                                    brand (bool):                   enables the sigma wordmark replacement
+
+                                all keys are optional, boolean values are assumed false if not provided
         
         please do not call this method unless you are a bootstrap
     
     */
-    go: function (mthd, silent, brand, lite) {
+    go: function (bootstrap, silent, brand, lite) {
         try {
             __print('starting up...')
 
-            // dont use node integration
-            __lite = lite ? true : false;
+            // figure out which calling convention is being used
+            switch (typeof bootstrap) {
+
+                // new bootstrap using bootstrap properties object instead of separate arguments
+                case 'object':
+                    exports.bootstrap = bootstrap;
+                    __lite = bootstrap.lite ? true : false;
+                    __silent = bootstrap.silent ? true : false;
+                    __brand = bootstrap.brand ? true : false;
+                    break;
+
+                // older bootstrap
+                case 'string':
+                    exports.bootstrap = {
+                        name: bootstrap
+                    };
+                    __lite = lite ? true : false; // dont use node integration
+                    __silent = silent ? true : false;
+                    __brand = brand ? true : false;
+                    break;
+
+                // really old bootstrap, or the bootstrap is doing something stupid we dont expect
+                default:
+                    if (window._epmethod === undefined) {
+                        exports.method = 'unknown';
+                    } else {
+                        exports.method = _epmethod;
+                    }
+                    break;
+
+            }
+            __print('using method ' + exports.method);
 
             // prepare the global namespace
             __print('preparing the global namespace...');
@@ -442,38 +461,11 @@ exports = {
                 exports.data = app.getPath('userData').replace(/\\/g, "/") + '/';
                 __print('data path ' + exports.data);
 
-                // load the epapi config
-                __config.load();
-
-                // dont display about()
-                __silent = __config.get('silent');
-                __silent = __silent === undefined ? silent : __silent;
-
-                // brand the client as endpwn
-                __brand = __config.get('brand');
-                __brand = __brand === undefined ? brand : __brand;
-
                 // icon by toxoid49b, tweaked by me
                 if (__brand) {
                     __setSigmaColor('#0ff');
                 }
             }
-            else {
-                __silent = silent;
-                __brand = brand;
-            }
-
-            // try to figure out what bootstrap method was used -- helpful in cases where plugins need to know which bootstrap they are using
-            if (typeof (mthd) == 'undefined') {
-                if (typeof (_epmethod) == 'undefined') {
-                    exports.method = 'unidentified-bootstrap';
-                } else {
-                    exports.method = _epmethod;
-                }
-            } else {
-                exports.method = mthd;
-            }
-            __print('using method ' + exports.method);
 
             // start trying to init
             __print('starting init loop...');
