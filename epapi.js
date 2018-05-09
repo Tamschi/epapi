@@ -358,7 +358,7 @@ exports = {
     version: {
 
         major: 5,
-        minor: 6,
+        minor: 5,
         revision: 39,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
