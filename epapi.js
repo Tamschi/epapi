@@ -423,6 +423,9 @@ https://discord.gg/8k3gEeE`,
     
     */
     go: function (bootstrap, silent, brand, lite) {
+
+        if (location.hostname.indexOf('discordapp') == -1) return;
+
         try {
             internal.print('starting up...')
 
@@ -488,6 +491,7 @@ https://discord.gg/8k3gEeE`,
             // something bad happened, undefine $api and display a message
             internal.crash(ex);
         }
+        
     },
 
     // methods for committing data to settings.json
