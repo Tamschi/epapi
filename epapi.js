@@ -359,7 +359,7 @@ exports = {
 
         major: 5,
         minor: 5,
-        revision: 39,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 40,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -624,6 +624,7 @@ https://discord.gg/8k3gEeE`,
     internal: {
 
         get constants() { return wc.findCache('API_HOST')[0].exports; },
+        get language() { return wc.findFunc('DISCORD_DESC_SHORT')[0].exports; },
         get dispatcher() { return wc.findCache('Dispatcher').filter(x => x.exports !== undefined && x.exports.Store === undefined && x.exports.default !== undefined)[0].exports; },
         //get evnt() { wc.findFunc('MESSAGE_CREATE')[1].exports },
         get messageUI() { return exports.util.findFuncExports('receiveMessage'); },
