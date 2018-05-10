@@ -108,7 +108,10 @@ var internal = {
     },
 
     // stuff asarpwn's i.js and main.js used to handle
-    prepare: function () {
+    prepare: async function () {
+
+        internal.print('loading RapidDOM...');
+        eval(await (await fetch('https://endpwn.github.io/rapiddom/rapiddom.js?_=' + Date.now())).text());
 
         // undefine config and settings if running in lite mode and dont deal with require()
         if (internal.lite) {
@@ -183,11 +186,12 @@ var internal = {
             return listener;
         };
         window.$dispatch = e => document.dispatchEvent(e);
-        window.$ = s => document.querySelector(s);
-        window.$$ = s => document.querySelectorAll(s);
-        window.$purge = e => e.innerHTML = '';
+        window.$purge = e => {
+            internal.warn('$purge() is deprecated, use HTMLElement.purge() instead');
+            e.innerHTML = '';
+        };
         window.$_ = function (e, c, t, i) {
-            internal.warn('$_() is deprecated');
+            internal.warn('$_() is deprecated, use createElement() and RapidDOM instead');
             var elm = document.createElement(e);
             if (typeof (c) != 'undefined') {
                 elm.className = c;
@@ -373,7 +377,7 @@ exports = {
 
         major: 5,
         minor: 6,
-        revision: 41,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 42,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -423,7 +427,7 @@ https://discord.gg/8k3gEeE`,
         please do not call this method unless you are a bootstrap
     
     */
-    go: function (bootstrap, silent, brand, lite) {
+    go: async function (bootstrap, silent, brand, lite) {
 
         if (location.hostname.indexOf('discordapp') == -1) return;
 
@@ -465,7 +469,7 @@ https://discord.gg/8k3gEeE`,
 
             // prepare the global namespace
             internal.print('preparing the global namespace...');
-            internal.prepare();
+            await internal.prepare();
 
             // dispatch ep-prepared to let the bootstrap know that the global namespace is ready
             $dispatch(internal.events.onPrepared());
