@@ -300,7 +300,7 @@ var internal = {
                                 var style = document.createElement("style");
                                 style.type = "text/css";
                                 style.innerHTML = fs.readFileSync($api.data + '/styles/' + x).toString();
-                                document.body.appendChild(style);
+                                document.head.appendChild(style);
                             }
                         });
                     }
