@@ -187,6 +187,7 @@ var internal = {
         window.$$ = s => document.querySelectorAll(s);
         window.$purge = e => e.innerHTML = '';
         window.$_ = function (e, c, t, i) {
+            internal.warn('$_() is deprecated');
             var elm = document.createElement(e);
             if (typeof (c) != 'undefined') {
                 elm.className = c;
