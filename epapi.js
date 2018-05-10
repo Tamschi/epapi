@@ -209,7 +209,7 @@ var internal = {
 
         // extension methods used in some older plugins, maintained for compatibility
         String.prototype.replaceAll = function (search, replacement) { return this.split(search).join(replacement) };
-        //Array.prototype.contains = function (s) { return this.indexOf(s) != -1 };
+        Array.prototype.contains = function (s) { return this.indexOf(s) != -1 };
 
         // derive the date of creation from a discord snowflake id
         Date.fromSnowflake = (id) => new Date((id / 4194304) + 1420070400000);
