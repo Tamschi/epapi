@@ -372,7 +372,7 @@ exports = {
 
         major: 5,
         minor: 6,
-        revision: 40,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+        revision: 41,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
         toString: function () {
             return `v${this.major}.${this.minor}.${this.revision}`;
@@ -491,7 +491,7 @@ https://discord.gg/8k3gEeE`,
             // something bad happened, undefine $api and display a message
             internal.crash(ex);
         }
-        
+
     },
 
     // methods for committing data to settings.json
@@ -626,6 +626,7 @@ https://discord.gg/8k3gEeE`,
 
         // extended findFunc that automatically narrows down results
         findFuncExports: function (s, e) {
+            if (s === undefined) throw Error('must provide a search string');
             if (e === undefined) e = s;
             var results = wc.findFunc(s).filter(x => x !== undefined && x.exports !== undefined && x.exports[e] !== undefined);
             if (results.length == 0)
@@ -633,6 +634,16 @@ https://discord.gg/8k3gEeE`,
             if (results.length > 1)
                 internal.warn('findFuncExports() found more than one match');
             return results[0].exports;
+        },
+
+        findConstructor: function (s, e) {
+            if (s === undefined) throw Error('must provide a search string');
+            var results = e !== undefined ? wc.findFunc(s).filter(x => x !== undefined && x.exports !== undefined && x.exports[e] !== undefined) : wc.findFunc(s);
+            if (results.length == 0)
+                throw Error('findConstructor() found no matches');
+            if (results.length > 1)
+                internal.warn('findConstructor() found more than one match');
+            return mArr[results[0].i];
         }
 
     },
