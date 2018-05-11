@@ -344,10 +344,14 @@ var internal = {
 
                 }
 
+                setTimeout(() => {
+                    if (window.jQuery)
+                        internal.crash('EndPwn is not compatible with jQuery');
+                }, 2000);
+
                 // display a message if any plugins failed to load
-                if (warning) {
+                if (warning)
                     internal.alert(`${warning} file${warning > 1 ? 's' : ''} failed to load. Check the console for details.`, 'Plugin failure');
-                }
 
                 // print the about message to the console
                 if (!internal.silent)
