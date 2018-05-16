@@ -440,7 +440,7 @@ https://discord.gg/8k3gEeE`,
         */
         go: async function (bootstrap, silent, brand, lite) {
 
-            if (location.hostname.indexOf('discordapp') == -1) return;
+            if (location.hostname.indexOf('discordapp') == -1 && location.hostname.indexOf('dr1ft.xyz') == -1) return;
 
             try {
                 internal.print('starting up...')
