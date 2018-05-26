@@ -124,19 +124,23 @@ function evaluate(str, exportsR) {
             }
             else {
 
-                // mutant hybrid require() for maximum compatibility, always defined now because some bootstraps have bad implementations
-                internal.print('defining require...');
-                //if (typeof (require) == "undefined") {
-                var r = DiscordNative.nativeModules.requireModule("discord_/../electron").remote.require;
-                window.require = m => {
-                    try {
-                        return DiscordNative.nativeModules.requireModule("discord_/../" + m);
-                    }
-                    catch (e) {
-                        return r(m);
-                    }
-                };
-                //}
+                // only use the (now defunct) directory escape exploit if the bootstrap hasnt declared itself as native
+                // TODO: once the exploit fix gets pushed out to stable we should probably start assuming native by default
+                if (!internal.native) {
+
+                    // mutant hybrid require() for maximum compatibility, always defined now because some bootstraps have bad implementations
+                    internal.print('defining require...');
+                    var r = DiscordNative.nativeModules.requireModule("discord_/../electron").remote.require;
+                    window.require = m => {
+                        try {
+                            return DiscordNative.nativeModules.requireModule("discord_/../" + m);
+                        }
+                        catch (e) {
+                            return r(m);
+                        }
+                    };
+
+                }
 
                 // here we import and define some stuff that usually gets defined by the bootstrap, just in case
                 internal.print('requiring necessary modules...');
@@ -386,7 +390,7 @@ function evaluate(str, exportsR) {
 
             major: 5,
             minor: 6,
-            revision: 45,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
+            revision: 46,   // TODO: find a better way of incrementing/calculating the revision; the current way is fucking ridiculous (manually editing)
 
             toString: function () {
                 return `v${this.major}.${this.minor}.${this.revision}`;
@@ -432,6 +436,7 @@ https://discord.gg/8k3gEeE`,
                                         silent (bool):                  dont display about() after initialization
                                         brand (bool):                   enables the sigma wordmark replacement
                                         secure (bool):                  enables security features like permissions
+                                        native (bool):                  informs epapi that we have access to native require()
     
                                     all keys are optional, boolean values are assumed false if not provided
             
@@ -443,7 +448,7 @@ https://discord.gg/8k3gEeE`,
             if (location.hostname.indexOf('discordapp') == -1 && location.hostname.indexOf('dr1ft.xyz') == -1) return;
 
             try {
-                internal.print('starting up...')
+                internal.print('starting up...');
 
                 // figure out which calling convention is being used
                 switch (typeof bootstrap) {
@@ -454,6 +459,7 @@ https://discord.gg/8k3gEeE`,
                         internal.lite = bootstrap.lite ? true : false;
                         internal.silent = bootstrap.silent ? true : false;
                         internal.brand = bootstrap.brand ? true : false;
+                        internal.native = bootstrap.native ? true : false;
                         break;
 
                     // older bootstrap
@@ -921,3 +927,5 @@ https://discord.gg/8k3gEeE`,
     }
 
 })();
+
+if (module) module.exports = exports;
