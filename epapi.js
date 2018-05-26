@@ -576,7 +576,7 @@ https://discord.gg/8k3gEeE`,
             wrap: function (target1, callback) {
 
                 // for security; we're evaluating an untrusted expression in the local scope here
-                var internal = {};
+                //var internal = {};
 
                 // get the original function
                 var orig = evaluate(target1);
@@ -618,7 +618,7 @@ https://discord.gg/8k3gEeE`,
             // intercept a function's return value
             wrapAfter: function (target1, callback) {
 
-                var internal = {};
+                //var internal = {};
 
                 // get the original function
                 var orig = evaluate(target1);
