@@ -565,13 +565,6 @@ https://discord.gg/8k3gEeE`,
         // utility functions
         util: {
 
-            // BUG: wrap and its sister function both fuck things up that use `this`
-            //      i know exactly why this happens, but not the slightest clue how to fix it
-            //      manual wrapping is necessary in some cases because of this
-            //
-            //      trying to use these on any function that uses `this` will fuck that function
-            //      dont do it
-
             // intercept a function's arguments
             wrap: function (target1, callback) {
 
@@ -601,7 +594,7 @@ https://discord.gg/8k3gEeE`,
                     // returning undefined results in the function call being suppressed
                     if (typeof (args) != 'undefined') {
                         // call the original function
-                        return orig.apply(null, args)
+                        return orig.apply(this, args)
                     }
 
                 }
@@ -627,7 +620,7 @@ https://discord.gg/8k3gEeE`,
                 function stub() {
 
                     // call the original argument
-                    var r = orig.apply(null, arguments);
+                    var r = orig.apply(this, arguments);
 
                     try {
                         // call the wrapper and return its return value
