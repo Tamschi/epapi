@@ -926,6 +926,6 @@ https://discord.gg/8k3gEeE`,
 
     }
 
-})();
+    if (typeof module != 'undefined') module.exports = exports;
 
-if (typeof module != 'undefined') module.exports = exports;
+})();
